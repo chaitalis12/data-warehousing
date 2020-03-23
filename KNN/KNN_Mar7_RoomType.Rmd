@@ -1,0 +1,71 @@
+---
+title: "KNN"
+author: "Hashita Gadiraju,chaitalisawanth,shivani agrwal"
+date: "3/7/2020"
+output: html_document
+---
+
+
+
+###propertyt ype
+```{r}
+mower.df <- read.csv("D:/PSU/Winter 2020/Data warehousing/Project/Final/KNN/properttype_knn.csv")
+
+set.seed(111)
+train.index <- sample(row.names(mower.df), 0.6*dim(mower.df)[1])
+valid.index <- setdiff(row.names(mower.df), train.index)
+train.df <- mower.df[train.index, ]
+valid.df <- mower.df[valid.index, ]
+## new household
+new.df <- data.frame(price_range=3,	room_type=1,number_of_reviews=0,	smart_location=14,	zipcode=20003,	host_identity_verified=0,	host_is_superhost=1,neighbourhood=17)
+
+## scatter plot
+#plot( ~ Income, data=train.df, pch=ifelse(train.df$Ownership=="Owner", 1, 3))
+#text(train.df$price_range, train.df$price_rangetrain.df$Lot_Size, rownames(train.df), pos=4)
+#text(60, 20, "X")
+#legend("topright", c("owner", "non-owner", "newhousehold"), pch = c(1, 3, 4))
+```
+
+
+### predicting propertyt ype
+
+```{r}
+
+# initialize normalized training, validation data, complete data frames to originals
+library(caret)
+library(class)
+train.norm.df <- train.df
+valid.norm.df <- valid.df
+mower.norm.df <- mower.df
+# use preProcess() from the caret package to normalize Income and Lot_Size.
+norm.values <- preProcess(train.df[, 2:9], method=c("center", "scale"))
+train.norm.df[, 2:9] <- predict(norm.values, train.df[,2:9])
+valid.norm.df[, 2:9] <- predict(norm.values, valid.df[,2:9])
+mower.norm.df[, 2:9] <- predict(norm.values, mower.df[,2:9])
+new.norm.df <- predict(norm.values, new.df)
+# use knn() to compute knn.
+# knn() is available in library FNN (provides a list of the nearest neighbors)
+# and library class (allows a numerical output variable).
+library(FNN)
+nn <- knn(train = train.norm.df[,2:9], test = new.norm.df,
+cl = train.norm.df[, 1], k = 3)
+row.names(train.df)[attr(nn, "nn.index")]
+#attr(property_type,"nn.index")
+nn
+```
+
+
+
+
+### calculating Accuracy
+```{r}
+library(caret)
+# initialize a data frame with two columns: k, and accuracy.
+accuracy.df <- data.frame(k = c(3229 , 1 , 3296), accuracy = rep(0, 3))
+# compute knn for different k on validation.
+for(i in 1:14) {
+knn.pred <- knn(train.norm.df[, 2:9], valid.norm.df[, 2:9],cl = train.norm.df[, 1], k = i)
+accuracy.df[i, 2] <- confusionMatrix(table(knn.pred, valid.norm.df[, 1]))
+#$overall[1]
+}
+```
